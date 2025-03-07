@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Posture Reminder</title>
+    <!-- Import custom font from CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        :root {
+            --primary-color: #007AFF;
+            --accent-color: #FF9500;
+            --dark-bg: rgba(0, 0, 0, 0.75);
+            --light-text: #FFFFFF;
+            --secondary-text: rgba(255, 255, 255, 0.8);
+            --glow-effect: 0 0 15px rgba(0, 122, 255, 0.7);
+        }
+        
+        body {
+            /* Using a placeholder as the background - will be replaced with a local DBZ image */
+            background: url('https://cdnjs.cloudflare.com/ajax/libs/placeholders/4.0.0/img/1920x1080.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            color: var(--light-text);
+            overflow: hidden;
+            font-weight: 300;
+        }
+        
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 100%);
+            z-index: 1;
+        }
+        
+        .container {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .header {
+            margin-bottom: 4rem;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            margin-bottom: 1rem;
+            color: var(--light-text);
+            text-shadow: var(--glow-effect);
+            text-transform: uppercase;
+            background: linear-gradient(to right, #FFFFFF, #007AFF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        p {
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: var(--secondary-text);
+            max-width: 600px;
+            line-height: 1.5;
+        }
+        
+        .timer-container {
+            background-color: var(--dark-bg);
+            padding: 2rem 3rem;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            margin-bottom: 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .timer-label {
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+        
+        .timer-display {
+            font-size: 7rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+            transition: all 0.3s ease;
+            color: var(--light-text);
+            text-shadow: var(--glow-effect);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.05em;
+        }
+        
+        .next-reminder {
+            font-size: 1.4rem;
+            margin: 1.5rem 0;
+            color: var(--secondary-text);
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        button {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--light-text);
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 1rem 2rem;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        button.primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+        
+        button.primary:hover {
+            background-color: #0086FF;
+            box-shadow: 0 7px 15px rgba(0, 122, 255, 0.5);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(0, 122, 255, 0.3) 0%, rgba(0, 0, 0, 0.9) 70%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        
+        .notification.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .notification-content {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 3rem;
+            border-radius: 24px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            max-width: 80%;
+        }
+        
+        .notification h2 {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: linear-gradient(120deg, #FF9500, #FF2D55);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+        
+        .notification p {
+            font-size: 1.8rem;
+            margin-bottom: 2.5rem;
+            line-height: 1.4;
+        }
+        
+        .footer {
+            position: relative;
+            z-index: 2;
+            padding: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(5px);
+            background-color: rgba(0, 0, 0, 0.3);
+            width: 100%;
+        }
+
+        /* Animation for reminder */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        .status {
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            background-color: rgba(0, 122, 255, 0.2);
+            margin-top: 1rem;
+            display: inline-block;
+            font-weight: 500;
+            border: 1px solid rgba(0, 122, 255, 0.3);
+        }
+        
+        .status.active {
+            background-color: rgba(52, 199, 89, 0.2);
+            border-color: rgba(52, 199, 89, 0.3);
+        }
+        
+        .status.paused {
+            background-color: rgba(255, 149, 0, 0.2);
+            border-color: rgba(255, 149, 0, 0.3);
+        }
+        
+        .status i {
+            margin-right: 0.5rem;
+        }
+        
+        /* Energy meter */
+        .energy-meter {
+            width: 100%;
+            max-width: 400px;
+            height: 12px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .energy-level {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(to right, #FF9500, #FF2D55);
+            transform-origin: left;
+            transition: transform 1s linear;
+        }
+        
+        @keyframes auraGlow {
+            0% { filter: drop-shadow(0 0 5px rgba(0, 122, 255, 0.5)); }
+            50% { filter: drop-shadow(0 0 20px rgba(0, 122, 255, 0.8)); }
+            100% { filter: drop-shadow(0 0 5px rgba(0, 122, 255, 0.5)); }
+        }
+        
+        .glow-effect {
+            animation: auraGlow 3s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1 class="glow-effect">Posture Power</h1>
+            <p>Train like a Super Saiyan with perfect posture every 30 minutes</p>
+            <div class="status active" id="status"><i class="fas fa-check-circle"></i> Active - Synced with system clock</div>
+        </div>
+        
+        <div class="timer-container">
+            <div class="timer-label">Next reminder in</div>
+            <div class="timer-display" id="timer">--:--</div>
+            <div class="energy-meter">
+                <div class="energy-level" id="energyLevel"></div>
+            </div>
+        </div>
+        
+        <div class="next-reminder" id="nextReminder">Next reminder: Calculating...</div>
+        
+        <div class="controls">
+            <button id="pauseBtn"><i class="fas fa-pause"></i> Pause</button>
+            <button id="testBtn" class="primary"><i class="fas fa-bolt"></i> Test Notification</button>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification">
+        <div class="notification-content">
+            <h2 class="pulse">Power Up!</h2>
+            <p>Time to fix your posture and stand like a warrior!<br>Channel your inner Saiyan strength.</p>
+            <button id="dismissBtn" class="primary"><i class="fas fa-check"></i> Power Level Restored!</button>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>Inspired by the strength and discipline of Dragon Ball Z warriors | <i class="fas fa-dragon"></i> Saiyan Posture Edition</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const timerDisplay = document.getElementById('timer');
+            const nextReminderDisplay = document.getElementById('nextReminder');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const testBtn = document.getElementById('testBtn');
+            const notification = document.getElementById('notification');
+            const dismissBtn = document.getElementById('dismissBtn');
+            const statusDisplay = document.getElementById('status');
+            const energyLevel = document.getElementById('energyLevel');
+            
+            let interval;
+            let isActive = true;
+            let nextReminderTime;
+            
+            // Format time as MM:SS
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            // Format datetime for next reminder display
+            function formatNextReminder(date) {
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+            
+            // Calculate next reminder time (at :00 or :30 of each hour)
+            function calculateNextReminderTime() {
+                const now = new Date();
+                const minutes = now.getMinutes();
+                const seconds = now.getSeconds();
+                
+                // Clone current date
+                const nextTime = new Date(now);
+                
+                // Set to next 30-minute mark
+                if (minutes < 30) {
+                    nextTime.setMinutes(30, 0, 0);
+                } else {
+                    nextTime.setHours(nextTime.getHours() + 1, 0, 0, 0);
+                }
+                
+                return nextTime;
+            }
+            
+            // Update energy bar
+            function updateEnergyBar(remainingPercent) {
+                // Transform from right to left as time passes (scale from 1 to 0)
+                energyLevel.style.transform = `scaleX(${remainingPercent})`;
+                
+                // Change color based on percentage
+                if (remainingPercent > 0.6) {
+                    energyLevel.style.background = 'linear-gradient(to right, #34C759, #30D158)';
+                } else if (remainingPercent > 0.3) {
+                    energyLevel.style.background = 'linear-gradient(to right, #FF9500, #FF9F0A)';
+                } else {
+                    energyLevel.style.background = 'linear-gradient(to right, #FF2D55, #FF375F)';
+                }
+            }
+            
+            // Update timer display
+            function updateDisplay() {
+                if (!isActive) {
+                    timerDisplay.textContent = "--:--";
+                    nextReminderDisplay.textContent = "Reminders paused";
+                    updateEnergyBar(0);
+                    return;
+                }
+                
+                const now = new Date();
+                const diffMs = nextReminderTime - now;
+                const diffSec = Math.floor(diffMs / 1000);
+                
+                if (diffSec <= 0) {
+                    // Time for a reminder!
+                    showNotification();
+                    // Calculate next reminder time
+                    nextReminderTime = calculateNextReminderTime();
+                }
+                
+                // Update displays
+                timerDisplay.textContent = formatTime(diffSec > 0 ? diffSec : 0);
+                nextReminderDisplay.textContent = `Next reminder: ${formatNextReminder(nextReminderTime)}`;
+                
+                // Calculate percentage of time remaining
+                const totalTime = 30 * 60; // 30 minutes in seconds
+                const remainingTime = diffSec > 0 ? diffSec : 0;
+                const remainingPercent = remainingTime / totalTime;
+                
+                // Update energy bar
+                updateEnergyBar(remainingPercent);
+            }
+            
+            // Start the app automatically
+            function startApp() {
+                // Calculate initial next reminder time
+                nextReminderTime = calculateNextReminderTime();
+                
+                // Update display immediately
+                updateDisplay();
+                
+                // Set up interval to update every second
+                interval = setInterval(updateDisplay, 1000);
+                
+                // Update status
+                statusDisplay.innerHTML = '<i class="fas fa-check-circle"></i> Active - Synced with system clock';
+                statusDisplay.className = 'status active';
+                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+                
+                isActive = true;
+            }
+            
+            // Toggle pause/resume
+            function togglePause() {
+                if (isActive) {
+                    clearInterval(interval);
+                    isActive = false;
+                    pauseBtn.innerHTML = '<i class="fas fa-play"></i> Resume';
+                    statusDisplay.innerHTML = '<i class="fas fa-pause-circle"></i> Paused';
+                    statusDisplay.className = 'status paused';
+                    updateDisplay();
+                } else {
+                    startApp();
+                }
+            }
+            
+            // Show notification
+            function showNotification() {
+                notification.classList.add('active');
+                // Attempt to play sound
+                try {
+                    const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU');
+                    audio.play().catch(e => console.log('Audio play prevented by browser'));
+                } catch (e) {
+                    console.log('Audio playback error:', e);
+                }
+            }
+            
+            // Dismiss notification
+            function dismissNotification() {
+                notification.classList.remove('active');
+            }
+            
+            // Event listeners
+            pauseBtn.addEventListener('click', togglePause);
+            testBtn.addEventListener('click', showNotification);
+            dismissBtn.addEventListener('click', dismissNotification);
+            
+            // Start app automatically when page loads
+            startApp();
+        });
+    </script>
+</body>
+</html>
