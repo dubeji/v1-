@@ -290,6 +290,115 @@
         .glow-effect {
             animation: auraGlow 3s infinite;
         }
+
+        /* Streak counter */
+        .streak-container {
+            display: flex;
+            align-items: center;
+            margin-top: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .streak-count {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin: 0 0.5rem;
+        }
+        
+        /* Level indicator */
+        .level-badge {
+            background: linear-gradient(135deg, #FF2D55, #FF9500);
+            color: white;
+            border-radius: 20px;
+            padding: 0.4rem 1rem;
+            font-weight: 700;
+            font-size: 1rem;
+            margin-top: 1rem;
+            box-shadow: 0 4px 10px rgba(255, 45, 85, 0.3);
+        }
+
+        /* Power level indicator */
+        .power-level {
+            display: flex;
+            align-items: center;
+            margin-top: 1.5rem;
+        }
+        
+        .power-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent-color);
+            text-shadow: 0 0 10px rgba(255, 149, 0, 0.7);
+        }
+        
+        .power-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            margin-right: 1rem;
+            letter-spacing: 0.05em;
+        }
+        
+        /* Settings panel */
+        .settings-panel {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            z-index: 5;
+        }
+        
+        .settings-btn {
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .sound-toggle {
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+        
+        /* Challenge complete notification */
+        .challenge-complete {
+            position: absolute;
+            bottom: 5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            transition: transform 0.5s ease;
+            z-index: 5;
+            opacity: 0;
+        }
+        
+        .challenge-complete.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -298,12 +407,13 @@
     <div class="container">
         <div class="header">
             <h1 class="glow-effect">Posture Power</h1>
-            <p>Train like a Super Saiyan with perfect posture every 30 minutes</p>
+            <p>Become the Legendary Super Saiyan with perfect posture and break your limits!</p>
             <div class="status active" id="status"><i class="fas fa-check-circle"></i> Active - Synced with system clock</div>
+            <div class="level-badge"><i class="fas fa-star"></i> Level: <span id="userLevel">1</span></div>
         </div>
         
         <div class="timer-container">
-            <div class="timer-label">Next reminder in</div>
+            <div class="timer-label">Next power boost in</div>
             <div class="timer-display" id="timer">--:--</div>
             <div class="energy-meter">
                 <div class="energy-level" id="energyLevel"></div>
@@ -311,6 +421,17 @@
         </div>
         
         <div class="next-reminder" id="nextReminder">Next reminder: Calculating...</div>
+        
+        <div class="streak-container">
+            <div class="streak-label">Current Streak:</div>
+            <div class="streak-count" id="streakCount">0</div>
+            <div class="streak-unit">perfect postures</div>
+        </div>
+        
+        <div class="power-level">
+            <div class="power-label">Power Level:</div>
+            <div class="power-value" id="powerValue">9,000</div>
+        </div>
         
         <div class="controls">
             <button id="pauseBtn"><i class="fas fa-pause"></i> Pause</button>
@@ -320,14 +441,23 @@
     
     <div class="notification" id="notification">
         <div class="notification-content">
-            <h2 class="pulse">Power Up!</h2>
-            <p>Time to fix your posture and stand like a warrior!<br>Channel your inner Saiyan strength.</p>
+            <h2 class="pulse">It's Over 9000!</h2>
+            <p>Fix your posture and power up like a true Saiyan!<br>Stand tall and unleash your potential!</p>
             <button id="dismissBtn" class="primary"><i class="fas fa-check"></i> Power Level Restored!</button>
         </div>
     </div>
     
+    <div class="settings-panel">
+        <button class="settings-btn" id="settingsBtn"><i class="fas fa-cog"></i></button>
+        <button class="sound-toggle" id="soundToggle"><i class="fas fa-volume-up"></i></button>
+    </div>
+    
+    <div class="challenge-complete" id="challengeComplete">
+        Challenge complete! +500 Power Level!
+    </div>
+    
     <div class="footer">
-        <p>Inspired by the strength and discipline of Dragon Ball Z warriors | <i class="fas fa-dragon"></i> Saiyan Posture Edition</p>
+        <p>Become stronger with every perfect posture | <i class="fas fa-dragon"></i> Saiyan Warrior Training</p>
     </div>
 
     <script>
@@ -340,10 +470,24 @@
             const dismissBtn = document.getElementById('dismissBtn');
             const statusDisplay = document.getElementById('status');
             const energyLevel = document.getElementById('energyLevel');
+            const streakCount = document.getElementById('streakCount');
+            const powerValue = document.getElementById('powerValue');
+            const userLevel = document.getElementById('userLevel');
+            const soundToggle = document.getElementById('soundToggle');
+            const challengeComplete = document.getElementById('challengeComplete');
             
             let interval;
             let isActive = true;
             let nextReminderTime;
+            let streak = 0;
+            let power = 9000;
+            let level = 1;
+            let soundEnabled = true;
+            
+            // Power up sound - DBZ inspired sound
+            const powerUpSound = 'https://cdn.freesound.org/previews/513/513650_6142149-lq.mp3';
+            // Level up sound
+            const levelUpSound = 'https://cdn.freesound.org/previews/320/320775_5260872-lq.mp3';
             
             // Format time as MM:SS
             function formatTime(seconds) {
@@ -413,7 +557,7 @@
                 
                 // Update displays
                 timerDisplay.textContent = formatTime(diffSec > 0 ? diffSec : 0);
-                nextReminderDisplay.textContent = `Next reminder: ${formatNextReminder(nextReminderTime)}`;
+                nextReminderDisplay.textContent = `Next power boost: ${formatNextReminder(nextReminderTime)}`;
                 
                 // Calculate percentage of time remaining
                 const totalTime = 30 * 60; // 30 minutes in seconds
@@ -449,7 +593,7 @@
                     clearInterval(interval);
                     isActive = false;
                     pauseBtn.innerHTML = '<i class="fas fa-play"></i> Resume';
-                    statusDisplay.innerHTML = '<i class="fas fa-pause-circle"></i> Paused';
+                    statusDisplay.innerHTML = '<i class="fas fa-pause-circle"></i> Training Paused';
                     statusDisplay.className = 'status paused';
                     updateDisplay();
                 } else {
@@ -460,24 +604,139 @@
             // Show notification
             function showNotification() {
                 notification.classList.add('active');
-                // Attempt to play sound
+                
+                // Play sound if enabled
+                if (soundEnabled) {
+                    playSound(powerUpSound);
+                }
+            }
+            
+            // Play sound helper function
+            function playSound(soundUrl) {
                 try {
-                    const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU');
+                    const audio = new Audio(soundUrl);
+                    audio.volume = 0.7; // Set volume to 70%
                     audio.play().catch(e => console.log('Audio play prevented by browser'));
                 } catch (e) {
                     console.log('Audio playback error:', e);
                 }
             }
             
-            // Dismiss notification
+            // Dismiss notification and add to streak
             function dismissNotification() {
                 notification.classList.remove('active');
+                increaseStreak();
+            }
+            
+            // Increase streak and power level
+            function increaseStreak() {
+                streak++;
+                streakCount.textContent = streak;
+                
+                // Increase power level
+                increasePower(500);
+                
+                // Show challenge complete notification
+                showChallengeComplete();
+                
+                // Check if level up is warranted
+                checkLevelUp();
+                
+                // Save to localStorage
+                saveProgress();
+            }
+            
+            // Increase power level
+            function increasePower(amount) {
+                power += amount;
+                powerValue.textContent = power.toLocaleString();
+                
+                // Add a brief animation
+                powerValue.classList.add('pulse');
+                setTimeout(() => powerValue.classList.remove('pulse'), 2000);
+            }
+            
+            // Check if user should level up
+            function checkLevelUp() {
+                const newLevel = Math.floor(streak / 5) + 1;
+                if (newLevel > level) {
+                    level = newLevel;
+                    userLevel.textContent = level;
+                    
+                    // Play level up sound if enabled
+                    if (soundEnabled) {
+                        playSound(levelUpSound);
+                    }
+                }
+            }
+            
+            // Show challenge complete notification
+            function showChallengeComplete() {
+                challengeComplete.classList.add('show');
+                setTimeout(() => challengeComplete.classList.remove('show'), 3000);
+            }
+            
+            // Toggle sound
+            function toggleSound() {
+                soundEnabled = !soundEnabled;
+                if (soundEnabled) {
+                    soundToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+                } else {
+                    soundToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                }
+                
+                // Save preference
+                localStorage.setItem('posturePowerSoundEnabled', soundEnabled);
+            }
+            
+            // Save progress to localStorage
+            function saveProgress() {
+                const progress = {
+                    streak,
+                    power,
+                    level,
+                    lastActive: new Date().toISOString()
+                };
+                localStorage.setItem('posturePowerProgress', JSON.stringify(progress));
+            }
+            
+            // Load progress from localStorage
+            function loadProgress() {
+                const savedProgress = localStorage.getItem('posturePowerProgress');
+                if (savedProgress) {
+                    try {
+                        const progress = JSON.parse(savedProgress);
+                        streak = progress.streak || 0;
+                        power = progress.power || 9000;
+                        level = progress.level || 1;
+                        
+                        // Update UI
+                        streakCount.textContent = streak;
+                        powerValue.textContent = power.toLocaleString();
+                        userLevel.textContent = level;
+                    } catch (e) {
+                        console.error('Error loading saved progress', e);
+                    }
+                }
+                
+                // Load sound preference
+                const savedSoundPref = localStorage.getItem('posturePowerSoundEnabled');
+                if (savedSoundPref !== null) {
+                    soundEnabled = savedSoundPref === 'true';
+                    soundToggle.innerHTML = soundEnabled ? 
+                        '<i class="fas fa-volume-up"></i>' : 
+                        '<i class="fas fa-volume-mute"></i>';
+                }
             }
             
             // Event listeners
             pauseBtn.addEventListener('click', togglePause);
             testBtn.addEventListener('click', showNotification);
             dismissBtn.addEventListener('click', dismissNotification);
+            soundToggle.addEventListener('click', toggleSound);
+            
+            // Load saved progress
+            loadProgress();
             
             // Start app automatically when page loads
             startApp();
